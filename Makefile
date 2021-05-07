@@ -16,9 +16,10 @@
 #
 # NOTES:
 #  -fomit-frame-pointer
-#      Omit frame pointer creation in functions that don’t need it --- functions that have
+#      Omit frame pointer creation in functions that do not need it --- functions that have
 #      no local variables, for example.
 #
+SHELL := /bin/bash
 
 CC	= m68k-elf-gcc
 
@@ -88,7 +89,12 @@ $(APP): $(LIBS)
 $(APP): crt0.o $(APP).o $(LIBS)
 	$(LD) $(LDFLAGS) -Ttext=0xe00100 -Map $(APP).map -o $(APP).elf crt0.o $(APP).o $(LIBS)
 	$(OBJCOPY) $(OCFLAGS) $(APP).elf $(APP).bin
-	#/bin/cp $(APP).bin $(APP_FATNAME)
+	# only copy if filenames are different...
+	{ \
+	if [ "$(APP).bin" != "$(APP_FATNAME)" ]; then \
+	    /bin/cp $(APP).bin $(APP_FATNAME) ;\
+	fi ;\
+	}
 
 
 clean:
