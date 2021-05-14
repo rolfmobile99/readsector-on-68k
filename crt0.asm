@@ -25,6 +25,23 @@ _start:
         move.l  a0,usp          ;
         move.w  #$0000,sr       ; then, enter user mode. (S bit = 0)
 
+        ;
+        ; zero out the bss section, byte-aligned.
+        ; this clears bytes from __bss_start up to but not including _end
+        ;
+        ; XXX note: when .ld file sets align 4, this should be replaced with int-aligned clear function!
+        ;
+.zero_bss:
+	    move.l #__bss_start,a0
+	    move.l #_end,d0
+	    cmp.l a0,d0
+	    bls .zero_bss_done
+.L3:
+	    clr.b (a0)+
+	    cmp.l d0,a0
+	    bne .L3
+.zero_bss_done:
+
         bsr     main            ; go to main
 
 _exit:
