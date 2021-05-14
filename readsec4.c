@@ -191,7 +191,7 @@ void print_fatstats(int lba, BYTE data[], int fat16flag)
 {
     // expect 0x55aa at end of sector bytes
     if ((data[0x1fe] != 0x55) || (data[0x1ff] != 0xaa)) {
-        minprintf("sector %d (0x%x): not a boot sector!\n");
+        minprintf("sector %d (0x%x): not a boot sector!\n", lba, lba);
         return;
     }
 
