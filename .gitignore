@@ -1,0 +1,5 @@
+*.o
+
+# ignore mac desktop file
+.DS_Store
+
