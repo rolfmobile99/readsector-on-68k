@@ -3,7 +3,8 @@
 //
 //
 
-// requires: #include <stdarg.h>
+// needed for minprintf
+#include <stdarg.h>
 
 // printf is normally defined in stdio.h
 void minprintf(char *fmt, ...);
