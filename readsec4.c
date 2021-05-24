@@ -49,6 +49,9 @@ void print_fatstats(int lba, BYTE data[], int fat16flag);
 void dumpbuffer(const BYTE *buf, int size, int do_ascii);
 
 
+// there are only 28 bits of LBA address in the CF card interface
+#define LBA_MAX  ((1<<28) - 1)
+
 // please choose multiple of 512
 #define BUFSIZE 512
 
@@ -87,6 +90,7 @@ int main(int argc, char *argv[])
     char str[STRSIZE];
     char *p;
 
+    minprintf("crtl-C or blank entry quits\n\n");
     
     while (1) {
 
@@ -95,12 +99,16 @@ int main(int argc, char *argv[])
         p = fgets(str, STRSIZE, stdin);
         if (p != NULL) {
             chomp(str);
-            lba = (int)strtol(str, NULL, 0);  // base 0 means detect base 8, 10 or base 16
+            lba = (int)strtol(str, NULL, 0);    // base 0 means detect base 8, 10 or base 16
+            if (lba < 0 || lba > LBA_MAX) {
+                minprintf("what?\n");           // quick bounds check on input
+                continue;
+            }
         } else {    
-            break;
+            break;          // quit loop
         }
 
-#if 1
+
         /* initialize with known pattern */
         for (i = 0; i < BUFSIZE; i++) {
             buf[i] = i & 0xff;
@@ -110,13 +118,15 @@ int main(int argc, char *argv[])
 
         rc = cf_readsector(lba, (char *)buf, BUFSIZE);
     
-        if (rc != 0)
+        if (rc != 0) {
             minprintf("cf_readsector failed: errcode: %d\n", rc);
+            continue;
+        }
 
         dumpbuffer(buf, BUFSIZE, 1);    // show buffer in hex, with ascii on the right
 
         minprintf("\n");  // pretty print..
-#endif
+
 
         minprintf("info for sector %d (0x%x):\n", lba, lba);
 
@@ -189,6 +199,9 @@ void print_part(BYTE part[], int pnum)
 
 void print_fatstats(int lba, BYTE data[], int fat16flag)
 {
+    int i;
+    char vlabel[16];
+
     // expect 0x55aa at end of sector bytes
     if ((data[0x1fe] != 0x55) || (data[0x1ff] != 0xaa)) {
         minprintf("sector %d (0x%x): not a boot sector!\n", lba, lba);
@@ -221,11 +234,23 @@ void print_fatstats(int lba, BYTE data[], int fat16flag)
     
     int num_secs = (num_secs1 == 0)? num_secs2 : num_secs1;  // calc which field is used
 
-    // 0x047 - Volume label (this field is at offset 0x02b in FAT12/FAT16)
-    // XXX unfinished - needs strncpy or memcpy?
+    // 0x047 - Volume label (this field is at offset 0x02b in FAT12/FAT16) - 11 chars max
+    // note: these chars are NOT null-terminated!
+    // note: potentially could be re-done with memcpy and strrchr?
+    //
+    for (i = 0; i < 11; i++) {      // copy volume label to a string
+        vlabel[i] = data[0x2b+i];
+    }
+    vlabel[11] = '\0';
+    
+    for (i = 11-1; i >= 3; i--) {   // get rid of trailing spaces - assume volume label is at least 3 chars!
+        if (isspace(vlabel[i]))
+            vlabel[i] = '\0';
+    }
 
     minprintf("sector %d (0x%x): sec_size: %d  nsecs/clus: %d  nrsv: %d  nfats: %d  fat_secs: %d  ndirs_rt: %d\n", lba, lba, sec_size, nsecperclus, rsv_secs, numfats, fat_secs, numdirs_root);
     minprintf("       nsecs: %d\n", num_secs);
+    minprintf("       vol label: [%s]\n", vlabel);
 }
 
 
