@@ -3,6 +3,17 @@
 //
 // note: 'strtol' implementation code borrowed from newlib (see copyright below)
 //
+// BUGS:
+//  (reported by rolf)
+//  due to missing umodsi3 (see UNSIGNED_MOD_SUPPORTED below), the most negative int value
+//  does not convert correctly.
+//
+//  from test_atoi1.c example:
+//      enter digits: -2147483647
+//      strtol: -2147483647 (0x80000001)
+//      enter digits: -2147483648
+//      strtol: -( (0x80000000)   <-- decimal part not correct!
+//
 
 /*-
  * Copyright (c) 1990 The Regents of the University of California.
